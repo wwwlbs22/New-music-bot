@@ -36,3 +36,5 @@ python-ffmpeg
 ffmpeg
 uvloop
 reportlab
+aiohttp
+pyrogram
