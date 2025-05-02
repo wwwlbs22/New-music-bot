@@ -173,7 +173,6 @@ async def active_chats(client, message):
     user_id = message.from_user.id
     users_data = user_sessions.find_one({"user_id": get_owner_id_by_client(client)})
     sudoers = users_data.get("SUDOERS", [])
-    premium_by = collection.find_one({"user_id": get_owner_id_by_client(client)}, {"premium_by": 1}).get("premium_by", "TRIAL")
 
     is_admin = False
     if os.path.exists(admin_file):
@@ -185,7 +184,7 @@ async def active_chats(client, message):
     is_authorized = (
         is_admin or
         get_user_id_by_client(user_id, client) or
-        (user_id in sudoers and premium_by == "PAID")
+        user_id in sudoers
     )
 
     if not is_authorized:
@@ -582,7 +581,6 @@ async def block_user(client, message):
     user_id = message.from_user.id
     users_data = user_sessions.find_one({"user_id": get_owner_id_by_client(client)})
     sudoers = users_data.get("SUDOERS", [])
-    premium_by = collection.find_one({"user_id": get_owner_id_by_client(client)}, {"premium_by": 1}).get("premium_by", "TRIAL")
 
     is_admin = False
     if os.path.exists(admin_file):
@@ -594,7 +592,7 @@ async def block_user(client, message):
     is_authorized = (
         is_admin or
         get_user_id_by_client(user_id, client) or
-        (user_id in sudoers and premium_by == "PAID")
+        user_id in sudoers
     )
 
     if not is_authorized:
@@ -660,7 +658,6 @@ async def unblock_user(client, message):
     user_id = message.from_user.id
     users_data = user_sessions.find_one({"user_id": get_owner_id_by_client(client)})
     sudoers = users_data.get("SUDOERS", [])
-    premium_by = collection.find_one({"user_id": get_owner_id_by_client(client)}, {"premium_by": 1}).get("premium_by", "TRIAL")
 
     is_admin = False
     if os.path.exists(admin_file):
@@ -672,7 +669,7 @@ async def unblock_user(client, message):
     is_authorized = (
         is_admin or
         get_user_id_by_client(user_id, client) or
-        (user_id in sudoers and premium_by == "PAID")
+        user_id in sudoers
     )
 
     if not is_authorized:
@@ -1573,7 +1570,6 @@ async def blocklist_handler(client, message):
     user_id = message.from_user.id
     users_data = user_sessions.find_one({"user_id": get_owner_id_by_client(client)})
     sudoers = users_data.get("SUDOERS", [])
-    premium_by = collection.find_one({"user_id": get_owner_id_by_client(client)}, {"premium_by": 1}).get("premium_by", "TRIAL")
 
     is_admin = False
     if os.path.exists(admin_file):
@@ -1585,7 +1581,7 @@ async def blocklist_handler(client, message):
     is_authorized = (
         is_admin or
         get_user_id_by_client(user_id, client) or
-        (user_id in sudoers and premium_by == "PAID")
+        user_id in sudoers
     )
 
     if not is_authorized:
@@ -3334,7 +3330,6 @@ async def status_command_handler(client, message):
     # Get user data and permissions
     users_data = user_sessions.find_one({"user_id": get_owner_id_by_client(client)})
     sudoers = users_data.get("SUDOERS", [])
-    premium_by = collection.find_one({"user_id": get_owner_id_by_client(client)}, {"premium_by": 1}).get("premium_by", "TRIAL")
 
     is_admin = False
     if os.path.exists(admin_file):
@@ -3346,7 +3341,7 @@ async def status_command_handler(client, message):
     is_authorized = (
         is_admin or
         get_user_id_by_client(user_id, client) or
-        (user_id in sudoers and premium_by == "PAID")
+        user_id in sudoers
     )
 
     if not is_authorized:
@@ -3364,7 +3359,6 @@ async def broadcast_command_handler(client, message):
     admin_file = f"{ggg}/admin.txt"
     users_data = user_sessions.find_one({"user_id": get_owner_id_by_client(client)})
     sudoers = users_data.get("SUDOERS", [])
-    premium_by = collection.find_one({"user_id": get_owner_id_by_client(client)}, {"premium_by": 1}).get("premium_by", "TRIAL")
 
     is_admin = False
     if os.path.exists(admin_file):
@@ -3374,13 +3368,13 @@ async def broadcast_command_handler(client, message):
 
     # Check permissions
     is_authorized = (
-    is_admin or (
-        (get_user_id_by_client(user_id, client) or user_id in sudoers) and premium_by == "PAID"
+        is_admin or
+        get_user_id_by_client(user_id, client) or
+        user_id in sudoers
     )
-)
 
     if not is_authorized:
-        return await message.reply("**MF\n\nTHIS IS PAID OWNER/SUDOER'S COMMAND...**")
+        return await message.reply("**MF\n\nTHIS IS OWNER/SUDOER'S COMMAND...**")
 
     sender_id = get_owner_id_by_client(client)
     user_data = user_sessions.find_one({"user_id": sender_id})

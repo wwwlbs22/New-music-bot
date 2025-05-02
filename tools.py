@@ -1244,6 +1244,5 @@ def gvarstatus(user_id, key):
 
 PLANS = {
     "standard": {"amount": 6900, "duration": 20, "merit": 0},   # ₹69 for 20 days
-    "premium": {"amount": 9900, "duration": 30, "merit": 1},    # ₹100 for 30 days
     "pro": {"amount": 17900, "duration": 60, "merit": 2}        # ₹180 for 60 days
 }
