@@ -146,23 +146,6 @@ create_custom_filter = filters.create(lambda _, __, message: any(m.is_self for m
 
 # Auth handler
 
-def get_user_id_by_client(user_id, client):
-  for id in clients:
-    if id == user_id:
-      user_client = clients.get(user_id)
-      if user_client.me.id == client.me.id:
-          return client.me.id
-  return False
-
-def get_owner_id_by_client(client):
-    """Returns the user ID associated with the given client object.  Returns None if not found."""
-    try:
-      for user_id, user_client in clients.items():
-        if user_client.me and user_client.me.id == client.me.id:  #Directly compare client objects
-            return user_id
-    except:
-      user_id = owners.get(client.me.id)
-      return user_id
 
 
 
@@ -185,7 +168,6 @@ async def add_active_chat(user_client,chat_id):
 
 @Client.on_message(filters.command("ac"))
 @retry()
-
 async def active_chats(client, message):
     admin_file = f"{ggg}/admin.txt"
     user_id = message.from_user.id
