@@ -1,27 +1,39 @@
 import logging
 from telethon.tl.types import DocumentAttributeImageSize
-
 from pyrogram import Client
-
-# Configure the logger
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]'
-)
-
-# Create a logger object
-logger = logging.getLogger("pyrogram")
-
 import sys
 import asyncio
-from pytgcalls import filters as call_filters
 import os
-from tools import *
+import time
+import queue
+import datetime
+import random
+import base64
+import subprocess
+import re
+import json
+import certifi
+from typing import Optional, Dict, List, Tuple, NamedTuple
+
+# Third-party libraries
+from pytgcalls import filters as call_filters
+from pytgcalls import idle, PyTgCalls
+from pytgcalls.types import AudioQuality, MediaStream, VideoQuality, ChatUpdate
+from pytgcalls.exceptions import NoActiveGroupCall, NotInCallError
+from telethon import TelegramClient, events, errors, Button
+import yt_dlp
+import magic
+import psutil
+
+
+# Local modules
+from tools import *  # Assuming these are utility functions
 from config import *
 from fonts import *
-from pyrogram import enums
-from pyrogram import Client, filters
-from pytgcalls.types import ChatUpdate
+
+# Pyrogram and Telethon imports
+from pyrogram import enums, filters
+from pyrogram import Client
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import Message, ChatPrivileges
 from pyrogram.enums import ChatType, ChatMemberStatus
@@ -29,41 +41,42 @@ import importlib
 from telethon import  Button
 from pyrogram.errors.exceptions import InviteHashExpired , ChannelPrivate ,GroupcallForbidden, AccessTokenExpired, UserDeactivated
 from pyrogram.errors.exceptions import SessionRevoked, UserDeactivatedBan, AuthKeyInvalid, AuthKeyUnregistered, SessionRevoked, AuthTokenExpired, AuthKeyDuplicated
-from pytgcalls.exceptions import NotInCallError
-import time
-import queue
-import certifi
-import datetime
-import random
-from pytgcalls.exceptions import (
-    NoActiveGroupCall,
-)
-import base64
-import subprocess
-import re
-import json
-from pytgcalls import idle, PyTgCalls
-from pytgcalls.types import AudioQuality
-from pytgcalls.types import MediaStream
-from pytgcalls.types import VideoQuality
-from telethon import TelegramClient, events, errors
-import yt_dlp
-# Define the main bot client (app)
 import random
 import string
+# Set up logging
+def setup_logger():
+    """Configures the logger for the application."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]'
+    )
+    return logging.getLogger("pyrogram")
 
-cache_dir = f"{ggg}/cache"
-os.makedirs(cache_dir, exist_ok=True)
 
+# Initialize the logger
+logger = setup_logger()
+
+
+# Define the cache directory
+def setup_cache_directory():
+    """Creates the cache directory if it does not exist."""
+    cache_dir = f"{ggg}/cache"
+    os.makedirs(cache_dir, exist_ok=True)
+
+setup_cache_directory()
+
+# Chat management functions
 async def remove_active_chat(user_client, chat_id):
+    """Removes a chat from the active list and clears its directory."""
     if chat_id in active[user_client.me.username]:
         active[user_client.me.username].remove(chat_id)
     chat_dir = f"{ggg}/user_{user_client.me.id}/{chat_id}"
     os.makedirs(chat_dir, exist_ok=True)
     clear_directory(chat_dir)
 
-
-def storre_user(user_id, timestamp):
+# Database management functions
+def store_user(user_id, timestamp):
+    """Stores or updates user information in the database."""
     collection.update_one(
         {"user_id": user_id},
         {"$set": {"timestamp": timestamp}},
@@ -71,49 +84,8 @@ def storre_user(user_id, timestamp):
     )
 
 import asyncio
-import logging
-from typing import Optional
-from pyrogram import Client
-
-
-
-
-
-from telethon import TelegramClient, events
-import asyncio
-import traceback
-import os
-    # Start Telethon monitor bot
-
+# Chat info and stats functions
 from pyrogram.enums import ChatMemberStatus, ChatType
-
-
-
-
-
-from pyrogram import Client, filters
-import asyncio
-import datetime
-from pyrogram import enums
-
-
-
-
-
-
-
-
-
-
-from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-
-# Store temporary format selections
-stored_format = {}
-
-
-
-from typing import Dict, List, Optional, Tuple, NamedTuple
 
 class BotStats(NamedTuple):
     """Container for bot statistics including identification info."""
@@ -122,8 +94,19 @@ class BotStats(NamedTuple):
     count: int
 
 
+
+
+# Inline keyboard and format selection functions
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+
+# Store temporary format selections
+stored_format = {}
+
+
 async def get_chat_info(client: Client, chat_id: int) -> Tuple[Optional[enums.ChatType], Optional[int]]:
-    """Get chat type and members count safely with error handling."""
+    """Retrieves the chat type and member count for a given chat ID.
+    Handles potential errors like FloodWait."""
     try:
         chat = await client.get_chat(chat_id)
         members_count = await client.get_chat_members_count(chat_id) if not chat.type ==enums.ChatType.PRIVATE else 0
@@ -136,7 +119,8 @@ async def get_chat_info(client: Client, chat_id: int) -> Tuple[Optional[enums.Ch
         return None, None
 
 async def get_client_stats(client: Client) -> Optional[Dict[str, int]]:
-    """Gets statistics for a single client instance."""
+    """Collects statistics about a client's interactions, such as private chats, groups,
+    and admin status in groups."""
     stats = {
         'private': 0,
         'groups': 0,
@@ -162,7 +146,7 @@ async def get_client_stats(client: Client) -> Optional[Dict[str, int]]:
             if not isinstance(chat_info, tuple) or chat_info[0] is None:
                 continue
                 
-            chat_type, members_count = chat_info
+            chat_type, members_count  = chat_info
 
             if chat_type == enums.ChatType.PRIVATE:
                 stats['private'] += 1
@@ -187,26 +171,21 @@ async def get_client_stats(client: Client) -> Optional[Dict[str, int]]:
 
     return stats
 
-
-from telethon import events
-from telethon.tl.types import User
-
-
-
-
+# Song queue management functions
 def currently_playing(user_client, message):
+    """Checks if a song is currently playing in a specific chat."""
     song_queue = queues.get(f"dic_{user_client.me.id}")
     try:
         if len(song_queue[message.chat.id]) <=1:
            return False
         return True
     except KeyError:
-        True
+        return True
 
 
-import datetime
+# Utility functions
+
 from pyrogram import filters
-
 
 
 
@@ -223,8 +202,11 @@ def format_duration(duration):
     return f"{seconds:02d}"
 
 
-
+# Main user management functions
 async def run_user(user_id):
+    """Starts and manages both the user bot client and the session client.
+    Handles authentication, error management, and setup of necessary handlers."""
+    
     reload_all_plugins()
     user_data = user_sessions.find_one({"user_id": user_id})
     user_session_string = user_data.get("string_session")
@@ -374,16 +356,13 @@ async def run_user(user_id):
         if user_id in clients:
             clients.pop(user_id)
 
-
-
-
-
-
-
+# Global variable management functions
 def set_gvar(user_id, key, value):
+    """Sets a global variable for a specific user."""
     set_user_data(user_id, key, value)
 
 def get_user_data(user_id, key):
+    """Retrieves a global variable for a specific user."""
     user_data = user_sessions.find_one({"user_id": user_id})
     if user_data and key in user_data:
         return user_data[key]
@@ -394,12 +373,14 @@ def set_user_data(user_id, key, value):
 
 def gvarstatus(user_id, key):
     return get_user_data(user_id, key)
-
 def unset_user_data(user_id, key):
+    """Unsets (removes) a global variable for a specific user."""
      user_sessions.update_one({"user_id": user_id}, {"$unset": {key: ''}}, upsert=True)
 
-
+# File and Mime type management functions
 def rename_file(old_name, new_name):
+    """Renames a file and logs the operation. Handles common errors such as
+    FileNotFound and FileExistsError."""
     try:
         # Rename the file
         os.rename(old_name, new_name)
