@@ -720,8 +720,8 @@ async def show_sudo_list(client, message):
     admin_file = f"{ggg}/admin.txt"
     user_id = message.from_user.id
     owner_id = get_owner_id_by_client(client)
-    # Get premium status of the command sender
-    premium_by = collection.find_one({"user_id": user_id}, {"premium_by": 1}).get("premium_by", "PAID")
+    
+    
     
     is_admin = False
     if os.path.exists(admin_file):
@@ -729,8 +729,8 @@ async def show_sudo_list(client, message):
             admin_ids = [int(line.strip()) for line in file.readlines()]
             is_admin = user_id in admin_ids
 
-    # Check permissions - must be admin/verified AND have PAID status
-    is_authorized = is_admin or (get_user_id_by_client(user_id, client) and premium_by == "PAID")
+    # Check permissions
+    is_authorized = is_admin or get_user_id_by_client(user_id, client)
 
     if not is_authorized:
         return await message.reply("**MF\n\nTHIS IS PAID OWNER'S COMMAND...**")
@@ -775,9 +775,8 @@ async def add_to_sudo(client, message):
     admin_file = f"{ggg}/admin.txt"
     user_id = message.from_user.id
 
-    # Get premium status of the command sender
     owner_id = get_owner_id_by_client(client)
-    premium_by = collection.find_one({"user_id": owner_id}, {"premium_by": 1}).get("premium_by", "TRIAL")
+    
 
     is_admin = False
     if os.path.exists(admin_file):
@@ -785,10 +784,10 @@ async def add_to_sudo(client, message):
             admin_ids = [int(line.strip()) for line in file.readlines()]
             is_admin = user_id in admin_ids
     
-    is_authorized = is_admin or (get_user_id_by_client(user_id, client) and premium_by == "PAID")
+    is_authorized = is_admin or get_user_id_by_client(user_id, client)
 
     if not is_authorized:
-        return await message.reply("**MF\n\nTHIS IS PAID OWNER'S COMMAND...**")
+        return await message.reply("**MF\n\nTHIS IS OWNER'S COMMAND...**")
 
     if message.reply_to_message:
         replied_message = message.reply_to_message
@@ -1839,7 +1838,7 @@ async def play_handler_func(user_client, message):
     youtube_link = None  
     input_text = message.text.split(" ", 1)  
     d_ata = collection.find_one({"user_id": get_owner_id_by_client(user_client)})  
-    premium_by = d_ata.get("premium_by", "PAID")  
+      
     song_queue = queues.get(f"dic_{user_client.me.id}")  
     act_calls = len(active.get(user_client.me.username, []))  
     
@@ -1857,7 +1856,7 @@ async def play_handler_func(user_client, message):
     # Check queue for the target chat
     current_queue = len(song_queue.get(target_chat_id, [])) if song_queue else 0  
 
-    if premium_by in ("REFERRAL", "TRIAL") and (act_calls >= 5 or current_queue >= 5):  
+    if act_calls >= 5 or current_queue >= 5:  
         return await message.reply(  
             f"The bot is in trial mode, so it has the following limitations:\n"  
             f"- Active calls: {act_calls} (Limit: 5)\n"  
