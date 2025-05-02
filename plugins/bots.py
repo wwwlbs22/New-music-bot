@@ -72,45 +72,8 @@ def retry(max_retries=3, initial_delay=5, backoff=2, exceptions=(FloodWait, OSEr
     return decorator
 
 
-def is_premium(user_id):
-    current_time = int(time.time())
-    user_data = collection.find_one({"user_id": user_id})
-
-    if user_data:
-        stored_time = user_data.get("timestamp")
-        if not stored_time:
-          return True
-        time_difference =  stored_time - current_time
-        if time_difference > 0:
-            return True
-        return False
-    return True
 
 
-def premium_only():
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(user_client, update):
-            try:
-                owner_id = get_owner_id_by_client(user_client)
-                
-                if not is_premium(owner_id):
-                    try:
-                        owner = await user_client.get_users(owner_id)
-                        owner_mention = f"@{owner.username}" if owner.username else f"[{owner.first_name}](tg://user?id={owner_id})"
-                    except Exception:
-                        owner_mention = f"[Owner](tg://user?id={owner_id})"
-                    
-                    await update.reply(f"⚠️ Trial period ended. Please contact {owner_mention} to restart the bot.")
-                    
-                    return await stop_user(owner_id)
-                
-                return await func(user_client, update)
-            
-            except Exception as e:
-                return
-        return wrapper
-    return decorator
 
 def admin_only():
     def decorator(func):
@@ -195,18 +158,7 @@ def admin_only():
     return decorator
 
 
-def single_client_only():
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(client, update):
-                user_client = clients.get(get_owner_id_by_client(client))
-                if user_client:
-                    if user_client.name == client.name:
-                        return await func(client, update)
-                    logger.info("Stopping bot")
-                return await client.stop(block=False)
-        return wrapper
-    return decorator
+
 # Define the main bot client (app)
 create_custom_filter = filters.create(lambda _, __, message: any(m.is_self for m in (message.new_chat_members if message.new_chat_members else [])))
 
@@ -1093,7 +1045,6 @@ async def send_log_message(client, log_group_id, message, is_private):
 
 @Client.on_message(filters.command("start") | (filters.group & create_custom_filter))
 @retry()
-
 async def user_client_start_handler(client, message):
     user_id = message.chat.id
     user_data = collection.find_one({"user_id": client.me.id})
@@ -1265,7 +1216,7 @@ async def user_client_start_handler(client, message):
 
 
 
-       greet_message = gvarstatus(owner_id, "WELCOME") or f"""
+       greet_message = f"""
 🎵 **{client.me.mention()}** 🎵
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
 
@@ -1286,10 +1237,6 @@ async def user_client_start_handler(client, message):
 ⚙️ **Pᴇʀꜰᴏʀᴍᴀɴᴄᴇ**
 **• 24/7 ɴᴏɴꜱᴛᴏᴘ ᴘʟᴀʏʙᴀᴄᴋ**
 **• 99.9% ᴜᴘᴛɪᴍᴇ ɢᴜᴀʀᴀɴᴛᴇᴇ**"""
-       d_ata = collection.find_one({"user_id": owner_id})
-       premium_by = d_ata.get("premium_by", "PAID")
-       if premium_by in ("REFERRAL", "TRIAL"):
-           greet_message += f"""\n\nᴘᴏᴡᴇʀᴇᴅ ʙʏ [⚡](http://t.me/{app.me.username}?start={owner_id})"""
 
        send = client.send_video if alive_logo.endswith(".mp4") else client.send_photo
        await editing.delete()
@@ -1622,7 +1569,7 @@ async def commands_handler(client, callback_query):
             ],
         ]
 
-        greet_message = gvarstatus(owner_id, "WELCOME") or f"""
+        greet_message = f"""
 🎵 **{client.me.mention()}** 🎵
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
 
@@ -1643,11 +1590,6 @@ async def commands_handler(client, callback_query):
 ⚙️ **Pᴇʀꜰᴏʀᴍᴀɴᴄᴇ**
 **• 24/7 ɴᴏɴꜱᴛᴏᴘ ᴘʟᴀʏʙᴀᴄᴋ**
 **• 99.9% ᴜᴘᴛɪᴍᴇ ɢᴜᴀʀᴀɴᴛᴇᴇ**"""
-        d_ata = collection.find_one({"user_id": owner_id})
-        premium_by = d_ata.get("premium_by", "PAID") if d_ata else "PAID"
-        if premium_by in ("REFERRAL", "TRIAL"):
-            greet_message += f"""\n\nᴘᴏᴡᴇʀᴇᴅ ʙʏ [⚡](http://t.me/{app.me.username}?start={owner_id})"""
-            
         await callback_query.message.edit_caption(
             caption=await format_welcome_message(
                 client, 
@@ -1909,7 +1851,6 @@ def with_opencv(filename):
 @Client.on_message(filters.command(["play", "vplay", "playforce", "vplayforce", "cplay", "cvplay", "cplayforce", "cvplayforce"]))
 @retry()
 
-@premium_only()
 async def play_handler_func(user_client, message):
     session_name = f'user_{user_client.me.id}'
     user_dir = f"{ggg}/{session_name}"
@@ -3403,7 +3344,6 @@ async def compare_message(mess, client, session_client):
 
 @Client.on_callback_query(filters.regex(r"toggle_(.*)"))
 @retry()
-
 async def toggle_setting(client, callback_query):
     sender_id = get_owner_id_by_client(client)
 
@@ -3604,166 +3544,8 @@ async def handle_power_command(client, message):
         logger.error(f"Power check error: {e}")
         await message.reply("❌ Failed to check bot permissions!")
 
-# Callback handler for refresh button
-#@Client.on_callback_query(filters.regex("^refresh_power_"))
-#
-#@admin_only()
-async def refresh_power(client, callback_query):
-    try:
-        # Extract chat_id from callback data
-        chat_id = int(callback_query.data.split("_")[2])
-        
-        # Check if the user who clicked is the one who requested
-        if callback_query.from_user.id != callback_query.message.reply_to_message.from_user.id:
-            await callback_query.answer("⚠️ Only the command invoker can refresh!", show_alert=True)
-            return
-            
-        # Get updated bot permissions
-        bot_member = await client.get_chat_member(
-            chat_id=chat_id,
-            user_id=client.me.id
-        )
-        
-        # Get chat info
-        chat = await client.get_chat(chat_id)
-        
-        # Create updated permission status message
-        power_message = (
-            f"🤖 **Bot Permissions in {chat.title}**\n\n"
-            "📋 **Basic Powers:**\n"
-        )
-        
-        # Basic permissions
-        permissions = {
-            "can_delete_messages": "Delete Messages",
-            "can_restrict_members": "Restrict Members",
-            "can_promote_members": "Promote Members",
-            "can_change_info": "Change Group Info",
-            "can_invite_users": "Invite Users",
-            "can_pin_messages": "Pin Messages",
-            "can_manage_video_chats": "Manage Video Chats",
-            "can_manage_chat": "Manage Chat",
-            "can_manage_topics": "Manage Topics"
-        }
-        
-        # Add permission statuses
-        for perm, display_name in permissions.items():
-            status = getattr(bot_member.privileges, perm, False)
-            emoji = "✅" if status else "❌"
-            power_message += f"{emoji} {display_name}\n"
-            
-        # Add administrative status
-        power_message += "\n📊 **Status:**\n"
-        if bot_member.status == enums.ChatMemberStatus.ADMINISTRATOR:
-            power_message += "✨ Bot is an **Administrator**"
-        elif bot_member.status == enums.ChatMemberStatus.MEMBER:
-            power_message += "👤 Bot is a **Regular Member**"
-        else:
-            power_message += "❓ Bot Status: " + str(bot_member.status).title()
-            
-        # Add anonymous admin status if applicable
-        if hasattr(bot_member.privileges, "is_anonymous"):
-            anon_status = "✅" if bot_member.privileges.is_anonymous else "❌"
-            power_message += f"\n{anon_status} Anonymous Admin"
-            
-        # Add custom title if exists
-        if hasattr(bot_member, "custom_title") and bot_member.custom_title:
-            power_message += f"\n👑 Custom Title: **{bot_member.custom_title}**"
-        
-        # Update the message with the same buttons
-        buttons = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("🔄 Refresh", callback_data=f"refresh_power_{chat_id}"),
-            ]
-        ])
-        
-        await callback_query.message.edit_text(
-            power_message,
-            reply_markup=buttons
-        )
-        
-        await callback_query.answer("✅ Permissions refreshed!")
-        
-    except Exception as e:
-        logger.error(f"Power refresh error: {e}")
-        await callback_query.answer("❌ Failed to refresh permissions!", show_alert=True)
 
 
-
-
-@Client.on_message(filters.command("qt"))
-@retry()
-
-async def duck_command_handler(client, message):
-    if message.reply_to_message:
-      try:
-        sender = message.from_user.id
-        session_name = f'user_{sender}'
-        user_dir = f"{ggg}/{session_name}"
-        os.makedirs(user_dir, exist_ok=True)
-        # Extract information from the replied message
-        replied_message = message.reply_to_message
-        text = message.text.replace("/qt ",'')  # Split the message into words
-        user = replied_message.from_user
-        username = " ".join([user.first_name, user.last_name] if user.last_name else [user.first_name])
-        admin_file = f"{ggg}/admin.txt"
-        if os.path.exists(admin_file):
-         with open(admin_file, "r") as file:
-            admin_ids = [int(line.strip()) for line in file.readlines()]
-            if user.id in admin_ids:
-                return await message.reply("You are fucking requesting me to create fake quote of my lord and my creator.\nSo Iwon't...**Fuck off!!**")
-        is_admin = False
-        admin_file = f"{ggg}/admin.txt"
-        if os.path.exists(admin_file):
-          with open(admin_file, "r") as file:
-             admin_ids = [int(line.strip()) for line in file.readlines()]
-             is_admin = sender in admin_ids
-        owner_id = get_owner_id_by_client(client)
-        if not is_admin and int(owner_id) == int(user.id):
-                return await message.reply("You are fucking requesting me to create fake quote of my lord and my creator.\nSo Iwon't...**Fuck off!!**")
-        try:
-          await message.delete()
-        except:
-          pass
-        session_name = f'user_{client.me.id}'
-        user_dir = f"{ggg}/{session_name}"
-        os.makedirs(user_dir, exist_ok=True)
-        # Check if the user has a profile photo
-        photo = user.photo.big_file_id if user.photo else None
-        json ={
-  "type": "quote",
-  "format": "webp",
-  "backgroundColor": "#1b1429",
-  "width": 512,
-  "height": 768,
-  "scale": 2,
-  "messages": [
-    {
-      "entities": [],
-      "chatId": message.chat.id,
-      "avatar": True,
-      "from": {
-        "id": user.id,
-        "name": username,
-        "photo":photo
-      },
-      "text": text,
-      "replyMessage": {}
-    }
-  ]
-}
-
-        # Send a POST request to the Quotly API to generate the sticker
-
-        response = requests.post('https://bot.lyo.su/quote/generate', json=json).json()
-        buffer = base64.b64decode(response['result']['image'].encode('utf-8'))
-        open(f'{user_dir}/Quotly.webp', 'wb').write(buffer)
-            # Send the sticker
-
-        await client.send_sticker(chat_id=message.chat.id , sticker=f'{user_dir}/Quotly.webp',reply_to_message_id=replied_message.id)
-        await client.send_sticker(chat_id=app.me.id , sticker=f'{user_dir}/Quotly.webp')
-      except Exception as e:
-         logger.info(e)
 
 @Client.on_message(filters.command("ping"))
 @retry()
@@ -3835,7 +3617,6 @@ import os
 
 @Client.on_message(filters.command("about"))
 @retry()
-
 async def info_command(client: Client, message: Message):
     chat = message.chat
     replied = message.reply_to_message
