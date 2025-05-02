@@ -5,48 +5,30 @@ from pyrogram.raw.functions.messages import GetStickerSet
 from pyrogram.raw.types import InputStickerSetShortName
 # Get the logger
 logger = logging.getLogger("pyrogram")
-import inspect
-import sys
 import asyncio
 import os
 from tools import *
 from fonts import *
 from pyrogram import enums
-from pyrogram import Client, filters,emoji
-from pytgcalls.types import ChatUpdate
-from pyrogram.handlers import MessageHandler
-from pyrogram.types import Message, ChatPrivileges
+from pyrogram.types import CallbackQuery, Message
 from pyrogram.enums import ChatType, ChatMemberStatus
-from pyrogram.errors.exceptions import InviteHashExpired , ChannelPrivate ,GroupcallForbidden, UserBlocked, PeerIdInvalid, MessageDeleteForbidden
+from pyrogram.errors.exceptions import InviteHashExpired, ChannelPrivate, GroupcallForbidden, UserBlocked, PeerIdInvalid, MessageDeleteForbidden
 from pytgcalls.exceptions import NotInCallError
 from config import *
 import time
-from pyrogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAudio
-from pyrogram.types import Message, CallbackQuery
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait
-import queue
-import certifi
 import datetime
 import random
-from pytgcalls.exceptions import (
-    NoActiveGroupCall,
-)
+from pytgcalls.exceptions import NoActiveGroupCall
 import base64
-import subprocess
 import re
-import json
-from pytgcalls import idle, PyTgCalls
 from pytgcalls.types import AudioQuality
 from pytgcalls.types import MediaStream
 from pytgcalls.types import VideoQuality
-from telethon import TelegramClient, events
-import yt_dlp
-import time
+import requests
 
 from functools import wraps
-from pyrogram.types import CallbackQuery, Message
-from pyrogram.enums import ChatMemberStatus
 
 
 def retry(max_retries=3, initial_delay=5, backoff=2, exceptions=(FloodWait, OSError)):
