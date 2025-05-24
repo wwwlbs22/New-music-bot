@@ -16,7 +16,7 @@ STRING_SESSION = os.getenv("STRING_SESSION", "")
 GROUP = os.getenv("GROUP", "nub_coder_s")
 CHANNEL = os.getenv("CHANNEL", "nub_coders_updates")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
-OWNER_ID = os.getenv("OWNER_ID", 6076474757)
+OWNER_ID = int(os.getenv("OWNER_ID", 6076474757))
 LOGGER_ID = os.getenv("LOGGER_ID", None)
 mongodb = os.getenv("MONGODB_URI", "mongodb+srv://nubcoders:nubcoders@music.8rxlsum.mongodb.net/?retryWrites=true&w=majority&appName=music")
 # Working directory

@@ -3932,6 +3932,9 @@ async def set_welcome_handler(client, message):
     try:
         sender_id = message.from_user.id
         user_data = user_sessions.find_one({"user_id": sender_id})
+        print(type(OWNER_ID))
+        print(type(sender_id))
+
         if not sender_id == OWNER_ID:
             return await message.reply_text("Only bot owner is allowed to perform this command")
 
