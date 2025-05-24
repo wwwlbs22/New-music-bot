@@ -1,0 +1,79 @@
+{
+  "name": "Telegram Music Bot",
+  "description": "🔥 Ultimate Telegram Voice Chat Music Bot with breathtaking streaming capabilities! Powered by cutting-edge latest Pyrogram (Kurigram) and next-gen PyTgCalls for lightning-fast performance. Experience crystal-clear HD audio/video streaming with stunning UI and advanced features that will revolutionize your group voice chats! ⚡✨",
+  "logo": "https://raw.githubusercontent.com/nub-coders/nub-music-bot/refs/heads/main/music.jpg",
+  "keywords": [
+    "python3",
+    "telegram",
+    "MusicBot",
+    "telegram-bot",
+    "pyrogram",
+    "voice-chat",
+    "pytgcalls"
+  ],
+  "env": {
+    "API_ID": {
+      "description": "Get this value from https://my.telegram.org",
+      "value": "",
+      "required": true
+    },
+    "API_HASH": {
+      "description": "Get this value from https://my.telegram.org",
+      "value": "",
+      "required": true
+    },
+    "BOT_TOKEN": {
+      "description": "A Bot's token from Botfather",
+      "value": "",
+      "required": true
+    },
+    "OWNER_ID": {
+      "description": "Telegram user ID of the bot owner",
+      "value": "6076474757",
+      "required": true
+    },
+    "STRING_SESSION": {
+      "description": "A Pyrogram session string for the user account",
+      "value": "",
+      "required": true
+    },
+    "GROUP": {
+      "description": "Your support group username without @",
+      "value": "nub_coder_s",
+      "required": false
+    },
+    "CHANNEL": {
+      "description": "Your updates channel username without @",
+      "value": "nub_coders_updates",
+      "required": false
+    },
+    "MONGODB_URI": {
+      "description": "MongoDB connection string URI for database",
+      "value": "mongodb+srv://nubcoders:nubcoders@music.8rxlsum.mongodb.net/?retryWrites=true&w=majority&appName=music",
+      "required": true
+    },
+    "LOGGER_ID": {
+      "description": "chat id of the logger group",
+      "value": "",
+      "required": false
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    },
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git"
+    }
+  ],
+  "formation": {
+    "worker": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "stack": "container"
+}

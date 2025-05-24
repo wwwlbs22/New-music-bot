@@ -1,0 +1,5 @@
+config.py
+.env
+# Ignore everything inside the cache directory
+plugins/__pycache__/
+cache/
