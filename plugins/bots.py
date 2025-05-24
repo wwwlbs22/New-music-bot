@@ -23,6 +23,7 @@ from pyrogram.errors import (
     MessageDeleteForbidden
 )
 from pyrogram.raw.functions.messages import GetStickerSet
+from pyrogram.enums import MessageEntityType
 from pyrogram.raw.types import InputStickerSetShortName
 from pyrogram.types import (
     CallbackQuery,
