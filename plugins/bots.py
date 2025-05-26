@@ -4039,7 +4039,7 @@ async def set_welcome_handler(client, message):
                 error_msg += "• Welcome to {botname}!"
                 return await message.reply_text(error_msg)
 
-            set_gvar(sender_id, "WELCOME", processed_text)
+            set_gvar(client.me.id, "WELCOME", processed_text)
             updates.append("welcome message")
 
         # Handle media if present
