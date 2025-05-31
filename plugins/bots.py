@@ -1791,13 +1791,6 @@ async def play_handler_func(client, message):
     # Check queue for the target chat
     current_queue = len(queues.get(target_chat_id, [])) if queues else 0  
 
-    if act_calls >= 5 or current_queue >= 5:  
-        return await message.reply(  
-            f"The bot is in trial mode, so it has the following limitations:\n"  
-            f"- Active calls: {act_calls} (Limit: 5)\n"  
-            f"- Song queue: {current_queue} (Limit: 5)"  
-        )  
-        
     massage = await message.reply(f"{upper_mono('Searching for your query, please wait')}")  
     
     # Set target chat as active based on channel mode or not
