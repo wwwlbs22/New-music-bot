@@ -1791,7 +1791,7 @@ async def play_handler_func(client, message):
     # Check queue for the target chat
     current_queue = len(queues.get(target_chat_id, [])) if queues else 0  
 
-    massage = await message.reply(f"{upper_mono('Searching for your query, please wait')}")  
+    massage = await message.reply("⚡")
     
     # Set target chat as active based on channel mode or not
     is_active = await is_active_chat(client, target_chat_id)
