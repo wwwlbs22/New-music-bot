@@ -71,76 +71,87 @@ def admin_only():
                     command = update.command[0].lower()
                     logger.debug(f"Message command '{command}' from user {user_id} in chat {chat_id}")
                     
-                # Check if user is trying to skip their own song
-                is_song_owner = False
-                if isinstance(update, CallbackQuery):
-                    if update.message.chat.id in playing and playing[update.message.chat.id]:
-                        current_song = playing[update.message.chat.id]
-                        if user_id and command in ["skip", "cskip"] and current_song["by"].id == user_id:
-                            is_song_owner = True
-                            logger.info(f"User {user_id} is song owner, bypassing admin check")
-                else:
-                    if update.chat.id in playing and playing[update.chat.id]:
-                        current_song = playing[update.chat.id]
-                        if user_id and command in ["skip", "cskip"] and current_song["by"].id == user_id:
-                            is_song_owner = True
-                            logger.info(f"User {user_id} is song owner, bypassing admin check")
-                
-                if not is_song_owner:
-                    logger.debug("Performing full admin check")
-                    user_data = user_sessions.find_one({"bot_id": client.me.id})
-                    sudoers = user_data.get("SUDOERS", [])
-                    
-                    # Check admin status
-                    is_admin = False
-                    admin_file = f"{ggg}/admin.txt"
-                    if os.path.exists(admin_file):
-                        with open(admin_file, "r") as file:
-                            admin_ids = [int(line.strip()) for line in file.readlines()]
-                            is_admin = user_id in admin_ids
-                            if is_admin:
-                                logger.debug(f"User {user_id} is in admin list")
-                    
-                    # Check permissions
-                    is_auth_user = False
-                    auth_users = user_data.get('auth_users', {})
-                    if isinstance(auth_users, dict) and str(chat_id) in auth_users:
-                        is_auth_user = user_id in auth_users[str(chat_id)]
-                        if is_auth_user:
-                            logger.debug(f"User {user_id} is authorized for chat {chat_id}")
-                        
-                    if not isinstance(update, CallbackQuery):
-                        if command and str(command).endswith('del'):
-                            is_auth_user = False
-                            logger.debug("Command ends with 'del', auth_user status reset")
-                    
-                    is_authorized = (
-                        is_admin or str(OWNER_ID) == str(user_id) or user_id in sudoers or is_auth_user)
-                    
-                    if not user_id:
-                        linked_chat = await client.get_chat(chat_id)
-                        if linked_chat.linked_chat and update.sender_chat.id == linked_chat.linked_chat.id:
-                            logger.debug("Message from linked channel, allowing access")
-                            return await func(client, update)
-                        logger.warning("Cannot verify admin status from unknown user")
+                if not user_id:
+                    linked_chat = await client.get_chat(chat_id)
+                    if linked_chat.linked_chat and update.sender_chat.id == linked_chat.linked_chat.id:
+                        logger.debug("Message from linked channel, allowing access")
+                        return await func(client, update)
+                    logger.warning("Cannot verify admin status from unknown user")
+                    if isinstance(update, CallbackQuery):
+                        await update.answer("⚠️ Cannot verify admin status from unknown user.", show_alert=True)
+                    else:
                         await update.reply("⚠️ Cannot verify admin status from unknown user.", reply_to_message_id=reply_id)
-                        return
+                    return
+                
+                logger.debug("Performing admin check")
+                user_data = user_sessions.find_one({"bot_id": client.me.id})
+                sudoers = user_data.get("SUDOERS", [])
+                
+                # Check admin status
+                is_admin = False
+                admin_file = f"{ggg}/admin.txt"
+                if os.path.exists(admin_file):
+                    with open(admin_file, "r") as file:
+                        admin_ids = [int(line.strip()) for line in file.readlines()]
+                        is_admin = user_id in admin_ids
+                        if is_admin:
+                            logger.debug(f"User {user_id} is in admin list")
+                
+                # Check permissions
+                is_auth_user = False
+                auth_users = user_data.get('auth_users', {})
+                if isinstance(auth_users, dict) and str(chat_id) in auth_users:
+                    is_auth_user = user_id in auth_users[str(chat_id)]
+                    if is_auth_user:
+                        logger.debug(f"User {user_id} is authorized for chat {chat_id}")
                     
-                    chat_member = await client.get_chat_member(chat_id, user_id)
-                    if not (chat_member.status in (ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR) or is_authorized):
-                        logger.warning(f"User {user_id} not authorized for command {command}")
-                        if isinstance(update, CallbackQuery):
-                            await update.answer("⚠️ This action is restricted to admins only.", show_alert=True)
-                        else:
-                            await update.reply("⚠️ This command is restricted to admins only.", reply_to_message_id=reply_id)
-                        return
+                if not isinstance(update, CallbackQuery):
+                    if command and str(command).endswith('del'):
+                        is_auth_user = False
+                        logger.debug("Command ends with 'del', auth_user status reset")
+                
+                is_authorized = (
+                    is_admin or str(OWNER_ID) == str(user_id) or user_id in sudoers or is_auth_user)
+                
+                # Get chat member status
+                chat_member = await client.get_chat_member(chat_id, user_id)
+                is_chat_admin = chat_member.status in (ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR)
+                
+                # Check if user is trying to skip their own song (only for skip commands)
+                is_song_owner_skip = False
+                if command in ["skip", "cskip"]:
+                    if isinstance(update, CallbackQuery):
+                        if update.message.chat.id in playing and playing[update.message.chat.id]:
+                            current_song = playing[update.message.chat.id]
+                            if current_song["by"].id == user_id:
+                                is_song_owner_skip = True
+                                logger.debug(f"User {user_id} is song owner for skip command")
+                    else:
+                        if update.chat.id in playing and playing[update.chat.id]:
+                            current_song = playing[update.chat.id]
+                            if current_song["by"].id == user_id:
+                                is_song_owner_skip = True
+                                logger.debug(f"User {user_id} is song owner for skip command")
+                
+                # Allow access if user is admin OR (for skip commands only) if they own the song
+                if not (is_chat_admin or is_authorized or is_song_owner_skip):
+                    logger.warning(f"User {user_id} not authorized for command {command}")
+                    if isinstance(update, CallbackQuery):
+                        await update.answer("⚠️ This action is restricted to admins only.", show_alert=True)
+                    else:
+                        await update.reply("⚠️ This command is restricted to admins only.", reply_to_message_id=reply_id)
+                    return
                 
                 logger.info(f"User {user_id} authorized for {func.__name__}")
                 return await func(client, update)
                 
             except Exception as e:
-                error_msg = f"Error checking admin status: {str(e)}\nChat: {chat_id}\nUser: {user_id}\nCommand: {command}"
+                error_msg = f"Error checking admin status: {str(e)}"
                 logger.error(error_msg)
+                if isinstance(update, CallbackQuery):
+                    await update.answer("⚠️ Authorization check failed.", show_alert=True)
+                else:
+                    await update.reply("⚠️ Authorization check failed.")
                 return
         return wrapper
     return decorator
