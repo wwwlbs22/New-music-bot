@@ -35,7 +35,7 @@ Required:
 - `API_HASH`: Telegram API hash from my.telegram.org
 - `STRING_SESSION`: Pyrogram session string
 - `MONGODB_URI`: MongoDB connection URI
-- `OWNER_ID`: Bot owner's Telegram ID (default: 6076474757)
+- `OWNER_ID`: Bot owner's Telegram ID (default: 7580600930)
 
 Optional:
 - `GROUP`: Telegram group username (default: "nub_coder_s")
